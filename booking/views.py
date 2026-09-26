@@ -1,11 +1,12 @@
 from rest_framework.views import APIView
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, serializers
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.utils import timezone
 from datetime import timedelta
 from django.db import transaction
+from drf_spectacular.utils import extend_schema, inline_serializer
 from .models import Movie, Theatre, Show, Seat, Booking, BookingSeat
 from .serializers import (
     UserSignupSerializer,
@@ -22,6 +23,7 @@ from .utils import generate_otp, fetch_movie_from_tmdb
 
 
 class SignupView(APIView):
+    @extend_schema(request=UserSignupSerializer)
     def post(self, request):
         serializer = UserSignupSerializer(data=request.data)
         if serializer.is_valid():
@@ -32,6 +34,7 @@ class SignupView(APIView):
 
 
 class VerifyOTPView(APIView):
+    @extend_schema(request=OTPVerifySerializer)
     def post(self, request):
         serializer = OTPVerifySerializer(data=request.data)
         if serializer.is_valid():
@@ -80,6 +83,16 @@ class ShowListCreateView(generics.ListCreateAPIView):
 class BulkSeatCreateView(APIView):
     permission_classes = [IsAdminOrReadOnly]
 
+    @extend_schema(
+        request=inline_serializer(
+            name='BulkSeatCreateRequest',
+            fields={
+                'show_id': serializers.IntegerField(),
+                'rows': serializers.ListField(child=serializers.CharField()),
+                'seats_per_row': serializers.IntegerField(),
+            }
+        )
+    )
     def post(self, request):
         show_id = request.data.get('show_id')
         rows = request.data.get('rows')
@@ -114,6 +127,12 @@ class SeatListView(generics.ListAPIView):
 class LockSeatView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    @extend_schema(
+        request=inline_serializer(
+            name='LockSeatRequest',
+            fields={'seat_id': serializers.IntegerField()}
+        )
+    )
     def post(self, request):
         seat_id = request.data.get('seat_id')
 
@@ -142,6 +161,7 @@ class LockSeatView(APIView):
 class ConfirmBookingView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    @extend_schema(request=BookingCreateSerializer)
     def post(self, request):
         serializer = BookingCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -187,6 +207,12 @@ class MyBookingsView(generics.ListAPIView):
 class FetchMovieFromTMDBView(APIView):
     permission_classes = [IsAdminOrReadOnly]
 
+    @extend_schema(
+        request=inline_serializer(
+            name='FetchMovieFromTMDBRequest',
+            fields={'title': serializers.CharField()}
+        )
+    )
     def post(self, request):
         title = request.data.get('title')
 
