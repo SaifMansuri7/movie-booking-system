@@ -47,6 +47,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         if not self.user.is_verified:
             raise serializers.ValidationError("Account not verified. Please verify OTP first.")
 
+        data['role'] = self.user.role
         return data
 
 
