@@ -121,6 +121,20 @@ class SeatListView(generics.ListAPIView):
 
     def get_queryset(self):
         show_id = self.request.query_params.get('show_id')
+
+        # Lazily release any seat whose 5-minute lock has expired. There is no
+        # background job doing this, so we sweep for stale locks every time
+        # anyone (including the frontend's polling) asks for this show's seats.
+        # This means a seat abandoned mid-booking (e.g. the user's connection
+        # drops) becomes visibly 'available' again on its own, without
+        # requiring another user to actively retry locking it first.
+        expiry_cutoff = timezone.now() - timedelta(minutes=5)
+        Seat.objects.filter(
+            show_id=show_id,
+            status='locked',
+            locked_at__lt=expiry_cutoff,
+        ).update(status='available', locked_at=None, locked_by=None)
+
         return Seat.objects.filter(show_id=show_id)
 
 
