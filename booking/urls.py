@@ -10,6 +10,7 @@ from .views import (
     LockSeatView,
     ConfirmBookingView,
     MyBookingsView,
+    CancelBookingView,
     FetchMovieFromTMDBView,
 )
 
@@ -24,5 +25,6 @@ urlpatterns = [
     path('seats/lock/', LockSeatView.as_view(), name='seat-lock'),
     path('bookings/confirm/', ConfirmBookingView.as_view(), name='booking-confirm'),
     path('bookings/my/', MyBookingsView.as_view(), name='my-bookings'),
+    path('bookings/cancel/', CancelBookingView.as_view(), name='booking-cancel'),
     path('movies/fetch-tmdb/', FetchMovieFromTMDBView.as_view(), name='fetch-movie-tmdb'),
 ]

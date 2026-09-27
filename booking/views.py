@@ -204,6 +204,37 @@ class MyBookingsView(generics.ListAPIView):
         return Booking.objects.filter(user=self.request.user)
 
 
+class CancelBookingView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(
+        request=inline_serializer(
+            name='CancelBookingRequest',
+            fields={'booking_id': serializers.IntegerField()}
+        )
+    )
+    def post(self, request):
+        booking_id = request.data.get('booking_id')
+
+        try:
+            booking = Booking.objects.get(id=booking_id, user=request.user)
+        except Booking.DoesNotExist:
+            return Response({"error": "Booking not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if booking.status == 'cancelled':
+            return Response({"error": "Booking is already cancelled."}, status=status.HTTP_400_BAD_REQUEST)
+
+        with transaction.atomic():
+            seat_ids = BookingSeat.objects.filter(booking=booking).values_list('seat_id', flat=True)
+            Seat.objects.select_for_update().filter(id__in=seat_ids).update(
+                status='available', locked_at=None, locked_by=None
+            )
+            booking.status = 'cancelled'
+            booking.save()
+
+        return Response({"message": "Booking cancelled successfully."}, status=status.HTTP_200_OK)
+
+
 class FetchMovieFromTMDBView(APIView):
     permission_classes = [IsAdminOrReadOnly]
 
