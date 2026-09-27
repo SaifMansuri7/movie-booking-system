@@ -64,6 +64,9 @@ class TheatreSerializer(serializers.ModelSerializer):
 
 
 class ShowSerializer(serializers.ModelSerializer):
+    movie_title = serializers.CharField(source='movie.title', read_only=True)
+    theatre_name = serializers.CharField(source='theatre.name', read_only=True)
+
     class Meta:
         model = Show
         fields = '__all__'

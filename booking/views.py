@@ -75,9 +75,14 @@ class TheatreListCreateView(generics.ListCreateAPIView):
 
 
 class ShowListCreateView(generics.ListCreateAPIView):
-    queryset = Show.objects.all()
     serializer_class = ShowSerializer
     permission_classes = [IsAdminOrReadOnly]
+
+    def get_queryset(self):
+        if self.request.method == 'GET':
+            # Don't show shows whose time has already passed.
+            return Show.objects.filter(show_datetime__gte=timezone.now())
+        return Show.objects.all()
 
 
 class BulkSeatCreateView(APIView):
